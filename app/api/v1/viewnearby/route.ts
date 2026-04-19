@@ -29,7 +29,7 @@ async function getLots(userLat: number, userLong: number) {
 export async function POST(req:NextRequest){
     const headersList = await headers();
     const token = headersList.get('token')
-    const email=auth(token);
+    const email=await auth(token);
     if(!email){
         return NextResponse.json(
             {message:"not signed in"},

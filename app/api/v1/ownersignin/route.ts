@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const user = await User.findOne({ email });
-    if(!user){
+    if(!user || !user.isOwner){
         return NextResponse.json(
             {message:"User not found !"},
             {status:404}
