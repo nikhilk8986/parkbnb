@@ -4,10 +4,18 @@ import connectToDatabase from "@/lib/mongodb";
 import ParkingLot from "@/models/ParkingLot";
 import auth from "@/lib/auth";
 
-async function getLots(userLat: number, userLong: number) {
+type ParkingLotData = {
+    id: string;
+    latitude: number;
+    longitude: number;
+    totalSlots: number;
+    bookedSlots: number;
+}
+
+async function getLots(userLat: number, userLong: number): Promise<ParkingLotData[]> {
     
     await connectToDatabase();
-    const result: string[] = []; 
+    const result: ParkingLotData[] = []; 
     
     const lots = await ParkingLot.find();
     
@@ -15,11 +23,17 @@ async function getLots(userLat: number, userLong: number) {
 
     lots.forEach((lot) => {
         const distance = Math.sqrt(
-            Math.pow(lot.latitude - userLat, 2) + Math.pow(lot.longitude - userLong, 2)
+            Math.pow(lot.location.latitude - userLat, 2) + Math.pow(lot.location.longitude - userLong, 2)
         );
         
         if (distance <= dist) {
-            result.push(lot);
+            result.push({
+                id: lot._id,
+                latitude: lot.location.latitude,
+                longitude: lot.location.longitude,
+                totalSlots: lot.totalSlots,
+                bookedSlots: lot.bookedSlots
+            });
         }
     });
 
@@ -34,17 +48,15 @@ export async function POST(req:NextRequest){
         return NextResponse.json(
             {message:"not signed in"},
             {status:404}
-
         )
     }
     
     const body= await req.json();
     const {userLat,userLong}=body;
-    const Lots=getLots(userLat,userLong);
+    const Lots=await getLots(userLat,userLong);
 
     return NextResponse.json(
-        {Lots:Lots},
+        Lots,
         {status:200}
     )
-
 }

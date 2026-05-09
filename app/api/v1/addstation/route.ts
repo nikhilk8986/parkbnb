@@ -28,7 +28,12 @@ export async function POST(req:NextRequest){
 
     const {parkingId,latitude,longitude,totalSlots}=body;
     await connectToDatabase();
-    const newLot=await ParkingLot.create({parkingId:user.email,latitude:latitude,longitude:longitude,totalSlots:totalSlots});
+    const newLot=await ParkingLot.create({
+        parkingId:user.email,
+        location:{longitude:longitude,latitude:latitude},
+        ownerID:user._id,
+        totalSlots:totalSlots
+    });
     return NextResponse.json(
         {message:"parking lot added",lotId:newLot._id},
         {status:200}
