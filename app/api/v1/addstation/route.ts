@@ -26,16 +26,38 @@ export async function POST(req:NextRequest){
         )
     }
 
-    const {parkingId,latitude,longitude,totalSlots}=body;
+    const {latitude,longitude,totalSlots}=body;
     await connectToDatabase();
-    const newLot=await ParkingLot.create({
-        parkingId:user.email,
-        location:{longitude:longitude,latitude:latitude},
-        ownerID:user._id,
-        totalSlots:totalSlots
-    });
-    return NextResponse.json(
-        {message:"parking lot added",lotId:newLot._id},
-        {status:200}
-    )
+    
+    // Check if owner already has a parking lot
+    const existingLot = await ParkingLot.findOne({ ownerID: user._id });
+    
+    if (existingLot) {
+        // Update existing parking lot
+        const updatedLot = await ParkingLot.findByIdAndUpdate(
+            existingLot._id,
+            {
+                parkingId: user.email,
+                location: { longitude: longitude, latitude: latitude },
+                totalSlots: totalSlots
+            },
+            { new: true }
+        );
+        return NextResponse.json(
+            { message: "parking lot updated", lotId: updatedLot._id },
+            { status: 200 }
+        );
+    } else {
+        // Create new parking lot
+        const newLot = await ParkingLot.create({
+            parkingId: user.email,
+            location: { longitude: longitude, latitude: latitude },
+            ownerID: user._id,
+            totalSlots: totalSlots
+        });
+        return NextResponse.json(
+            { message: "parking lot added", lotId: newLot._id },
+            { status: 200 }
+        );
+    }
 }

@@ -8,23 +8,27 @@ const Signin = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   const clickSignin = async () => {
     setLoading(true);
     
     try {
-      const response = await axios.post('/api/v1/signin', {
+      const endpoint = isOwner ? '/api/v1/ownersignin' : '/api/v1/signin';
+      const response = await axios.post(endpoint, {
         password: password,
         email: email
       });
       
       if (response.status === 200 && response.data.token) {
-        // Store the token
+        
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('email', email);
+        localStorage.setItem('isOwner', isOwner.toString());
         
         console.log("signing succeed")
-        router.push('/home');
+       if(isOwner) router.push('/ownerdashboard');
+       else router.push('/userdashboard');
       }
     } catch (err) {
       console.log(err);
@@ -41,11 +45,35 @@ const Signin = () => {
         
         {/* Header */}
         <div className="mb-10 text-center">
-          {/* The signature Gemini Text Gradient */}
+          {}
           <h2 className="text-3xl font-medium mb-2 bg-clip-text text-white">
             Welcome Back
           </h2>
           <p className="text-[#C4C7C5]">Sign in to your account</p>
+        </div>
+
+        {/* User/Owner Toggle */}
+        <div className="mb-8 flex gap-3">
+          <button
+            onClick={() => setIsOwner(false)}
+            className={`flex-1 py-3 px-4 rounded-2xl font-medium transition-all ${
+              !isOwner
+                ? 'bg-[#A8C7FA] text-black border border-[#A8C7FA]'
+                : 'bg-[#131314] text-[#C4C7C5] border border-[#444746] hover:border-[#A8C7FA]'
+            }`}
+          >
+            User
+          </button>
+          <button
+            onClick={() => setIsOwner(true)}
+            className={`flex-1 py-3 px-4 rounded-2xl font-medium transition-all ${
+              isOwner
+                ? 'bg-[#A8C7FA] text-black border border-[#A8C7FA]'
+                : 'bg-[#131314] text-[#C4C7C5] border border-[#444746] hover:border-[#A8C7FA]'
+            }`}
+          >
+            Owner
+          </button>
         </div>
 
         {/* Email input */}
@@ -77,9 +105,9 @@ const Signin = () => {
           onClick={clickSignin}
           disabled={loading || !email || !password}
           /* Gemini Button Gradient with subtle glowing shadow */
-          className="w-full py-3.5 px-4 bg-white text-black border border-[#444746] rounded-2xl"
+          className="w-full py-3.5 px-4 bg-white text-black border border-[#444746] rounded-2xl font-medium hover:bg-gray-200 transition-all disabled:opacity-50"
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? 'Signing in...' : `Sign In as ${isOwner ? 'Owner' : 'User'}`}
         </button>
       </div>
     </div>

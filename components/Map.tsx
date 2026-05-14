@@ -7,9 +7,10 @@ import { useMap } from '@/contexts/MapContext';
 type MapProps = { 
     latitude: number;
     longitude: number;
+    onCoordinatesClick?: (lat: number, lng: number) => void;
 }
 
-const Map = ({ latitude, longitude }: MapProps) => {
+const Map = ({ latitude, longitude, onCoordinatesClick }: MapProps) => {
     const { markers, route } = useMap();
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -33,7 +34,19 @@ const Map = ({ latitude, longitude }: MapProps) => {
         markerRef.current = new mapboxgl.Marker()
             .setLngLat([longitude, latitude])
             .addTo(mapRef.current);
+        mapRef.current.on("click", (e) => {
+    const { lng, lat } = e.lngLat;
 
+    console.log("Clicked:", lat, lng);
+
+    // optional marker
+    new mapboxgl.Marker({ color: "red" })
+        .setLngLat([lng, lat])
+        .addTo(mapRef.current!);
+    
+    // Call the callback if provided
+    onCoordinatesClick?.(lat, lng);
+});
         return () =>{
             markerRef.current?.remove();
             markersRef.current.forEach(marker => marker.remove());

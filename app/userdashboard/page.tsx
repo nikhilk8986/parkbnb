@@ -2,7 +2,6 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Map from '@/components/Map';
 import { MapProvider } from '@/contexts/MapContext';
-import AddStation from '@/components/AddStation';
 
 const page = () => {
   return (
@@ -12,8 +11,7 @@ const page = () => {
         <div className="flex justify-center items-center p-8">
           <div className="w-full max-w-2xl">
             <div className="h-96 rounded-xl overflow-hidden shadow-lg border border-slate-800">
-              {/* <Map latitude={25.609000} longitude={85.134300} /> */}
-              <AddStation/>
+              <Map latitude={25.609000} longitude={85.134300} />
             </div>
           </div>
         </div>
