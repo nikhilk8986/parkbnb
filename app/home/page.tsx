@@ -1,6 +1,5 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
-import Map from '@/components/Map';
 import { MapProvider } from '@/contexts/MapContext';
 import AddStation from '@/components/AddStation';
 

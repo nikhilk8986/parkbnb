@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, latitude, longitude } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -15,9 +15,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    await User.create({ email, password ,isOwner:true});
-    
-    return NextResponse.json({ message: "User registered" }, { status: 201 });
+
+    await User.create({ email, password,location:{latitude,longitude}, isOwner: true });
+
+    return NextResponse.json({ message: "Owner registered" }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: "Invalid request body" },

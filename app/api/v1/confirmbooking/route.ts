@@ -37,7 +37,7 @@ export async function POST(req:NextRequest){
         });
         
         await ParkingLot.updateOne(
-            {parkingId: parkingId},
+            {_id: parkingId},
             {$inc:{bookedSlots:1}}
         );
         await User.updateOne(

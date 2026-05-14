@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password ,longitude,latitude} = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -16,8 +16,13 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const user = await User.findOne({ email });
-    if(!user){
+    const user = await User.findOneAndUpdate(
+      { email },
+      { location: { latitude, longitude } },
+      { new: true }
+    
+    );
+    if(!user || user.isOwner){
         return NextResponse.json(
             {message:"User not found !"},
             {status:404}

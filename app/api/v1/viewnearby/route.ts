@@ -19,7 +19,7 @@ async function getLots(userLat: number, userLong: number): Promise<ParkingLotDat
     
     const lots = await ParkingLot.find();
     
-    const dist = 0.009; 
+    const dist = 100; 
 
     lots.forEach((lot) => {
         const distance = Math.sqrt(

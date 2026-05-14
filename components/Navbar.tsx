@@ -21,8 +21,10 @@ const Navbar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
     localStorage.removeItem('isOwner');
+    localStorage.removeItem('latitude');
+    localStorage.removeItem('longitude');
     setIsLoggedIn(false);
-    router.push('/signin');
+    router.push('/home');
   };
 
   return (
@@ -61,15 +63,23 @@ const Navbar = () => {
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => router.push('/signin')}
-            className="px-6 py-2.5 bg-white text-black font-medium border border-[#444746] rounded-2xl transition-all hover:bg-gray-200 flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-            </svg>
-            Sign In
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/register')}
+              className="px-6 py-2.5 text-white font-medium border border-[#444746] rounded-2xl transition-all hover:border-[#A8C7FA] hover:text-[#A8C7FA]"
+            >
+              Register
+            </button>
+            <button
+              onClick={() => router.push('/signin')}
+              className="px-6 py-2.5 bg-white text-black font-medium border border-[#444746] rounded-2xl transition-all hover:bg-gray-200 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              Sign In
+            </button>
+          </div>
         )}
       </div>
     </nav>

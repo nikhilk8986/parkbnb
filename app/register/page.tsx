@@ -2,12 +2,15 @@
 import axios from 'axios';
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-const Signin = () => {
+const Register = () => {
   const router = useRouter();
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [isOwner, setIsOwner] = useState(false);
 
   React.useEffect(() => {
@@ -20,49 +23,56 @@ const Signin = () => {
     }
   }, []);
 
+  const clickRegister = async () => {
+    setError('');
+    
+    if (!email || !password || !confirmPassword) {
+      setError('All fields are required');
+      return;
+    }
 
-  const clickSignin = async () => {
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     
     try {
-      const endpoint = isOwner ? '/api/v1/ownersignin' : '/api/v1/signin';
+      const endpoint = isOwner ? '/api/v1/ownerregister' : '/api/v1/register';
       const response = await axios.post(endpoint, {
-        password: password,
         email: email,
-        longitude: localStorage.getItem('longitude'),
-        latitude: localStorage.getItem('latitude')
+        password: password,
+        isOwner: isOwner,
+        latitude:localStorage.getItem('latitude'),
+        longitude:localStorage.getItem('longitude')
       });
       
-      if (response.status === 200 && response.data.token) {
-        
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('email', email);
-        localStorage.setItem('isOwner', isOwner.toString());
-        
-        console.log("signing succeed")
-       if(isOwner) router.push('/ownerdashboard');
-       else router.push('/userdashboard');
+      if (response.status === 201) {
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        router.push('/signin');
       }
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      
+      console.log("something on register frontend");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    /* Background matches Gemini's deep #131314 dark mode canvas */
     <div className="min-h-screen flex items-center justify-center bg-[#131314] p-4 font-sans">
 
       <div className="w-full max-w-md bg-[#1E1F20] rounded-3xl p-8 border border-[#333537] shadow-xl">
         
         {/* Header */}
         <div className="mb-10 text-center">
-          {}
-          <h2 className="text-3xl font-medium mb-2 bg-clip-text text-white">
-            Welcome Back
+          <h2 className="text-3xl font-medium mb-2 text-white">
+            Create Account
           </h2>
-          <p className="text-[#C4C7C5]">Sign in to your account</p>
+          <p className="text-[#C4C7C5]">Register as a new user or owner</p>
         </div>
 
         {/* User/Owner Toggle */}
@@ -89,6 +99,13 @@ const Signin = () => {
           </button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-3 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Email input */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-[#C4C7C5] mb-2">Email</label>
@@ -102,7 +119,7 @@ const Signin = () => {
         </div>
 
         {/* Password input */}
-        <div className="mb-8">
+        <div className="mb-6">
           <label className="block text-sm font-medium text-[#C4C7C5] mb-2">Password</label>
           <input
             type="password"
@@ -113,18 +130,37 @@ const Signin = () => {
           />
         </div>
 
-        {/* Sign In Button */}
+        {/* Confirm Password input */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-[#C4C7C5] mb-2">Confirm Password</label>
+          <input
+            type="password"
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full px-4 py-3.5 bg-[#131314] border border-[#444746] rounded-2xl focus:outline-none focus:ring-1 focus:ring-[#A8C7FA] focus:border-[#A8C7FA] text-[#E3E3E3] placeholder-[#8E918F] transition-all"
+          />
+        </div>
+
+        {/* Register Button */}
         <button 
-          onClick={clickSignin}
-          disabled={loading || !email || !password}
-          /* Gemini Button Gradient with subtle glowing shadow */
-          className="w-full py-3.5 px-4 bg-white text-black border border-[#444746] rounded-2xl font-medium hover:bg-gray-200 transition-all disabled:opacity-50"
+          onClick={clickRegister}
+          disabled={loading || !email || !password || !confirmPassword}
+          className="w-full py-3.5 px-4 bg-white text-black border border-[#444746] rounded-2xl font-medium hover:bg-gray-200 transition-all disabled:opacity-50 mb-4"
         >
-          {loading ? 'Signing in...' : `Sign In as ${isOwner ? 'Owner' : 'User'}`}
+          {loading ? 'Creating account...' : `Register as ${isOwner ? 'Owner' : 'User'}`}
         </button>
+
+        {/* Sign In Link */}
+        <div className="text-center text-sm text-[#C4C7C5]">
+          Already have an account?{' '}
+          <Link href="/signin" className="text-[#A8C7FA] hover:text-white transition-colors">
+            Sign in
+          </Link>
+        </div>
       </div>
     </div>
   )
 }
 
-export default Signin
+export default Register
