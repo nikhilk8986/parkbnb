@@ -1,7 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import Map from '@/components/Map';
 import { MapProvider } from '@/contexts/MapContext';
 import axios from 'axios';
 
@@ -13,13 +12,78 @@ interface ParkingLot {
   bookedSlots: number;
 }
 
+interface Booking {
+  bookingId: string;
+  parkingId: string;
+  userId: string;
+  bookingDate: string;
+  status: string;
+}
+
 const Page = () => {
+  const [activeSection, setActiveSection] = useState('overview');
   const [showNearby, setShowNearby] = useState(false);
   const [nearbyLots, setNearbyLots] = useState<ParkingLot[]>([]);
   const [selectedLot, setSelectedLot] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const fetchedRef = useRef(false);
+
+  const fetchBookings = useCallback(async (bookingType: 'current' | 'past') => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setMessage('Not authenticated. Please sign in first.');
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.post(
+        '/api/v1/userdetails',
+        {},
+        {
+          headers: {
+            'token': token
+          }
+        }
+      );
+
+      if (response.status === 200 && response.data.bookings) {
+        const allBookings = response.data.bookings as Booking[];
+
+        if (bookingType === 'current') {
+          const currentBookings = allBookings.filter(
+            (booking) => booking.status === 'active' || booking.status === 'confirmed'
+          );
+          setBookings(currentBookings);
+        } else {
+          const pastBookings = allBookings.filter(
+            (booking) => booking.status !== 'active' && booking.status !== 'confirmed'
+          );
+          setBookings(pastBookings);
+        }
+        setMessage('');
+      }
+    } catch (error) {
+      setMessage('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if ((activeSection === 'currentbookings' || activeSection === 'pastbookings') && !fetchedRef.current) {
+      fetchedRef.current = true;
+      const bookingType = activeSection === 'currentbookings' ? 'current' : 'past';
+      fetchBookings(bookingType);
+    } else if (activeSection === 'overview') {
+      fetchedRef.current = false;
+    }
+  }, [activeSection, fetchBookings]);
 
   const handleViewNearby = async () => {
     setMessage('');
@@ -109,21 +173,121 @@ const Page = () => {
           setMessage('');
         }, 5000);
       }
-    } catch (error) {
-      const errorMsg = error.response?.data?.message || (error instanceof Error ? error.message : 'Unknown error');
-      setMessage('Booking failed: ' + errorMsg);
+    } catch {
+      console.log("someting on userdashboard ");
     } finally {
       setBookingLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#131314] text-white">
       <Navbar />
-      <MapProvider>
-        <div className="p-8">
-          <div className="max-w-6xl mx-auto">
-            {!showNearby ? (
+
+      {activeSection === 'currentbookings' ? (
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <button 
+            onClick={() => setActiveSection('overview')}
+            className="mb-6 px-4 py-2 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-all"
+          >
+            ← Back
+          </button>
+          
+          <div className="max-w-4xl">
+            <h1 className="text-3xl font-bold text-white mb-8">Current Bookings</h1>
+            
+            <div className="bg-[#1E1F20] border border-[#333537] rounded-3xl p-8">
+              {loading && bookings.length === 0 ? (
+                <p className="text-[#C4C7C5]">Loading bookings...</p>
+              ) : bookings.length === 0 ? (
+                <p className="text-[#C4C7C5]">No current bookings found</p>
+              ) : (
+                <div className="space-y-4">
+                  {bookings.map((booking) => (
+                    <div
+                      key={booking.bookingId}
+                      className="p-4 rounded-lg border bg-[#131314] border-[#333537] hover:border-[#A8C7FA] transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-white">{booking.bookingId}</p>
+                          <p className="text-sm text-[#8E918F]">Parking: {booking.parkingId}</p>
+                        </div>
+                        <div className="px-3 py-1 rounded-full text-xs font-medium bg-green-900 text-green-200">
+                          {booking.status || 'Active'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {message && (
+                <div className={`mt-4 p-4 rounded-lg text-sm ${
+                  message.includes('Error') 
+                    ? 'bg-red-900 text-red-200' 
+                    : 'bg-green-900 text-green-200'
+                }`}>
+                  {message}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : activeSection === 'pastbookings' ? (
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <button 
+            onClick={() => setActiveSection('overview')}
+            className="mb-6 px-4 py-2 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-all"
+          >
+            ← Back
+          </button>
+          
+          <div className="max-w-4xl">
+            <h1 className="text-3xl font-bold text-white mb-8">Past Bookings</h1>
+            
+            <div className="bg-[#1E1F20] border border-[#333537] rounded-3xl p-8">
+              {loading && bookings.length === 0 ? (
+                <p className="text-[#C4C7C5]">Loading bookings...</p>
+              ) : bookings.length === 0 ? (
+                <p className="text-[#C4C7C5]">No past bookings found</p>
+              ) : (
+                <div className="space-y-4">
+                  {bookings.map((booking) => (
+                    <div
+                      key={booking.bookingId}
+                      className="p-4 rounded-lg border bg-[#131314] border-[#333537] hover:border-[#A8C7FA] transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-white">{booking.bookingId}</p>
+                          <p className="text-sm text-[#8E918F]">Parking: {booking.parkingId}</p>
+                        </div>
+                        <div className="px-3 py-1 rounded-full text-xs font-medium bg-slate-900 text-slate-200">
+                          {booking.status || 'Completed'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {message && (
+                <div className={`mt-4 p-4 rounded-lg text-sm ${
+                  message.includes('Error') 
+                    ? 'bg-red-900 text-red-200' 
+                    : 'bg-green-900 text-green-200'
+                }`}>
+                  {message}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : activeSection === 'nearbyparking' ? (
+        <MapProvider>
+          <div className="p-8">
+            <div className="max-w-6xl mx-auto">
               <div className="flex flex-col items-center justify-center gap-8 min-h-[500px]">
                 <div className="text-center">
                   <h1 className="text-4xl font-bold text-white mb-4">User Dashboard</h1>
@@ -147,24 +311,25 @@ const Page = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <div>
-                <div className="mb-8 flex items-center justify-between">
-                  <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Nearby Parking Lots</h1>
-                    <p className="text-slate-400">Found {nearbyLots.length} parking lot(s) nearby</p>
+              {showNearby ? (
+                <div>
+                  <div className="mb-8 flex items-center justify-between">
+                    <div>
+                      <h1 className="text-3xl font-bold text-white mb-2">Nearby Parking Lots</h1>
+                      <p className="text-slate-400">Found {nearbyLots.length} parking lot(s) nearby</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActiveSection('overview');
+                        setShowNearby(false);
+                        setSelectedLot(null);
+                        setNearbyLots([]);
+                      }}
+                      className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-all"
+                    >
+                      Back
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowNearby(false);
-                      setSelectedLot(null);
-                      setNearbyLots([]);
-                    }}
-                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-all"
-                  >
-                    Back
-                  </button>
-                </div>
 
                 {message && (
                   <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg text-blue-400">
@@ -276,10 +441,83 @@ const Page = () => {
                   </div>
                 )}
               </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-8 min-h-[500px]">
+                <div className="text-center">
+                  <h1 className="text-4xl font-bold text-white mb-4">Find Parking</h1>
+                  <p className="text-slate-400 mb-8">Search for nearby parking lots</p>
+                </div>
+
+                <button
+                  onClick={handleViewNearby}
+                  disabled={loading}
+                  className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
+                >
+                  {loading ? 'Loading...' : 'View Nearby Parking'}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  </svg>
+                </button>
+
+                {message && (
+                  <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 max-w-md">
+                    {message}
+                  </div>
+                )}
+              </div>
             )}
+            </div>
+          </div>
+        </MapProvider>
+      ) : (
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          {/* Header */}
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-white mb-2">User Dashboard</h1>
+            <p className="text-[#C4C7C5]">Manage your parking bookings</p>
+          </div>
+
+          {/* Main Overview Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            
+            {/* Current Bookings Card */}
+            <div 
+              className="bg-[#1E1F20] border border-[#333537] rounded-3xl p-8 hover:border-[#A8C7FA] transition-all cursor-pointer" 
+              onClick={() => setActiveSection('currentbookings')}
+            >
+              <h3 className="text-2xl font-bold mb-2">Current Bookings</h3>
+              <p className="text-[#C4C7C5] mb-6">View your active parking bookings</p>
+              <button className="w-full py-2.5 px-4 bg-white text-black font-medium rounded-2xl hover:bg-gray-100 transition-all">
+                View Now
+              </button>
+            </div>
+
+            {/* Past Bookings Card */}
+            <div 
+              className="bg-[#1E1F20] border border-[#333537] rounded-3xl p-8 hover:border-[#A8C7FA] transition-all cursor-pointer" 
+              onClick={() => setActiveSection('pastbookings')}
+            >
+              <h3 className="text-2xl font-bold mb-2">Past Bookings</h3>
+              <p className="text-[#C4C7C5] mb-6">View your completed parking bookings</p>
+              <button className="w-full py-2.5 px-4 bg-white text-black font-medium rounded-2xl hover:bg-gray-100 transition-all">
+                View History
+              </button>
+            </div>
+
+            {/* Find Parking Card */}
+            <div 
+              className="bg-[#1E1F20] border border-[#333537] rounded-3xl p-8 hover:border-[#A8C7FA] transition-all cursor-pointer" 
+              onClick={() => setActiveSection('nearbyparking')}
+            >
+              <h3 className="text-2xl font-bold mb-2">Find Parking</h3>
+              <p className="text-[#C4C7C5] mb-6">Find and book nearby parking lots</p>
+              <button className="w-full py-2.5 px-4 bg-white text-black font-medium rounded-2xl hover:bg-gray-100 transition-all">
+                Search Now
+              </button>
+            </div>
           </div>
         </div>
-      </MapProvider>
+      )}
     </div>
   );
 };
